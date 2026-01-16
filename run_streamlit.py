@@ -10,6 +10,15 @@ def main() -> None:
 
     app_path = project_root / "src" / "front_end" / "streamlit_fe.py"
 
+    # If running inside Streamlit, just import and run the app logic
+    # This prevents "Runtime instance already exists" error on platforms like Streamlit Cloud
+    import streamlit as st
+    if st._is_running_with_streamlit:
+        from src.front_end.streamlit_fe import main as app_main
+        app_main()
+        return
+
+    # Otherwise, bootstrap the streamlit runtime (standard for local execution via `python run_streamlit.py`)
     run_sig = inspect.signature(bootstrap.run)
     kwargs = {}
 

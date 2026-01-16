@@ -1,0 +1,104 @@
+<profile>
+    <identification>
+        <name>
+            <firstname>NCBI</firstname>
+            <middlename>S.</middlename>
+            <lastname>User</lastname>
+        </name>
+    </identification>
+    <employment>
+        <position>
+            <positiontitle>Research Assistant</positiontitle>
+            <organization>
+                <orgname>Sample Laboratories</orgname>
+                <city>Bethesda</city>
+                <stateorprovince>Maryland</stateorprovince>
+                <country>United States</country>
+            </organization>
+            <startdate>
+                <year>2015</year>
+            </startdate>
+            <enddate>
+                <year>2025</year>
+            </enddate>
+        </position>
+    </employment>
+    <funding>
+        <support>
+            <projecttitle>Myalgic Encephalomyelitis/Chronic Fatigue Syndrome Research</projecttitle>
+            <awardnumber>S-KC-25-016</awardnumber>
+            <supportsource>Intermural Research Program</supportsource>
+            <location>My University State</location>
+            <contributiontype>award</contributiontype>
+            <awardamount>3000000</awardamount>
+            <inkinddescription/>
+            <overallobjectives>To catalyze the formation of innovative, multidisciplinary collaborative teams dedicated to advancing research in Myalgic Encephalomyelitis/Chronic Fatigue Syndrome (ME/CFS), with a focus on addressing emergent scientific and clinical challenges. This initiative aims to foster partnerships that integrate expertise in ME/CFS and related post-infectious chronic illnesses, laying the groundwork for future research applications</overallobjectives>
+            <potentialoverlap>There is potential for overlap between this proposed research on ME/CFS and other ongoing studies in post-infectious illnesses, autoimmune and neuroimmune disorders, metabolic dysfunction, and chronic fatigue-related conditions. ME/CFS shares clinical and biological characteristics with conditions such as Long COVID, fibromyalgia, and mitochondrial disorders, particularly in areas involving immune dysregulation, neuroinflammation, and energy metabolism. This overlap presents opportunities for collaborative investigations and the leveraging of existing research tools, datasets, and methodologies.</potentialoverlap>
+            <startdate>2025-12-01</startdate>
+            <enddate>2030-02-01</enddate>
+            <supporttype>pending</supporttype>
+            <commitment>
+                <personmonth year="2025">3</personmonth>
+                <personmonth year="2026">10</personmonth>
+                <personmonth year="2027">11</personmonth>
+                <personmonth year="2028">9</personmonth>
+                <personmonth year="2029">12</personmonth>
+                <personmonth year="2030">1</personmonth>
+            </commitment>
+        </support>
+        <support>
+            <projecttitle>Understanding of the Neurological Effects of Infection-Associated Chronic Illnesses</projecttitle>
+            <awardnumber>R01 KB09141026</awardnumber>
+            <supportsource>Mental Health Research Foundation</supportsource>
+            <location>The State University</location>
+            <contributiontype>award</contributiontype>
+            <awardamount>175000</awardamount>
+            <inkinddescription>None</inkinddescription>
+            <overallobjectives>The primary objective of this research initiative is to advance understanding of the neurological and mental health-related manifestations of infection-associated chronic illnesses, such as Neuro-PASC (post-acute sequelae of COVID-19), post-treatment Lyme disease, ME/CFS, POTS, and other post-viral fatigue syndromes. This initiative seeks to elucidate shared and condition-specific mechanisms underlying neuropsychiatric symptoms and to identify scientifically grounded pathways that contribute to disease persistence and progression. Through both clinical and preclinical studies—including mechanistic clinical trials and basic experimental studies in humans—the goal is to inform the development of effective diagnostic tools and therapeutic strategies tailored to the unique and overlapping neurobiological consequences of infection-triggered chronic illnesses.</overallobjectives>
+            <potentialoverlap>There is potential for overlap between this proposed research and other ongoing investigations into post-infectious syndromes, neuroimmune conditions, and chronic fatigue-related disorders. Many infection-associated chronic illnesses—such as Long COVID, ME/CFS, and post-treatment Lyme disease—share neurological and mental health-related manifestations, including cognitive dysfunction, mood disturbances, autonomic dysregulation, and fatigue. Consequently, this project may intersect with research focused on neuroinflammation, neuroimmune mechanisms, autonomic nervous system dysfunction, and related psychiatric comorbidities. Efforts will be made to ensure coordination with parallel studies to avoid redundancy, leverage existing findings and methodologies, and promote collaborative, cross-condition insights that enhance the scientific impact of this work.</potentialoverlap>
+            <startdate>2020-10-01</startdate>
+            <enddate>2025-11-01</enddate>
+            <supporttype>current</supporttype>
+            <commitment>
+                <personmonth year="2020">5</personmonth>
+                <personmonth year="2021">6</personmonth>
+                <personmonth year="2022">12</personmonth>
+                <personmonth year="2023">12</personmonth>
+                <personmonth year="2024">11</personmonth>
+                <personmonth year="2025">9</personmonth>
+            </commitment>
+        </support>
+        <support>
+            <projecttitle/>
+            <awardnumber/>
+            <supportsource>My University</supportsource>
+            <location/>
+            <contributiontype>inkind</contributiontype>
+            <awardamount>30000</awardamount>
+            <inkinddescription>Computing resources</inkinddescription>
+            <overallobjectives>These resources will facilitate the secure storage, high-throughput analysis, and reproducible management of complex datasets generated through clinical, imaging, genomic, and behavioral studies related to infection-associated chronic illnesses. The computing infrastructure aims to enhance research efficiency, enable cross-disciplinary collaboration, and accelerate the discovery of mechanistic insights and therapeutic targets.</overallobjectives>
+            <potentialoverlap>Other projects utilizing similar computing infrastructure for the analysis of clinical, neuroimaging, or multi-omics data, particularly in related fields such as neuroscience, immunology, or post-infectious disease research. However, all projects operate under distinct scientific aims, data governance policies, and resource allocation protocols to ensure proper prioritization and avoid conflicts in usage.</potentialoverlap>
+            <startdate>2025-10-01</startdate>
+            <supporttype>current</supporttype>
+            <commitment>
+                <personmonth year="2025">12</personmonth>
+            </commitment>
+            </support>
+        <support>
+            <projecttitle/>
+            <awardnumber/>
+            <supportsource>The State University</supportsource>
+            <location/>
+            <contributiontype>inkind</contributiontype>
+            <awardamount>50000</awardamount>
+            <inkinddescription>Technical Support</inkinddescription>
+            <overallobjectives>Provide specialized expertise necessary for the successful implementation and execution of the proposed research. This support may include assistance with data management, software development, troubleshooting of analytical tools, maintenance of research infrastructure, and support for laboratory or clinical equipment.</overallobjectives>
+            <potentialoverlap>Technical personnel may also support other ongoing projects within the institution or research group, particularly those involving similar platforms, equipment, or data workflows.</potentialoverlap>
+            <startdate>2025-09-01</startdate>
+            <supporttype>pending</supporttype>
+            <commitment>
+                <personmonth year="2025">12</personmonth>
+            </commitment>
+        </support>
+</funding>
+</profile>

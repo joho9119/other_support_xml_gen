@@ -1,0 +1,21 @@
+<profile>
+    <identification/>
+    <employment/>
+    <funding>
+        <support>
+            <projecttitle/>
+            <awardnumber/>
+            <supportsource/>
+            <location/>
+            <contributiontype>award|inkind</contributiontype>
+            <awardamount/>
+            <inkinddescription/>
+            <overallobjectives/>
+            <potentialoverlap/>
+            <startdate/>
+            <enddate/>
+            <supporttype/>
+            <commitment/>
+        </support>
+    </funding>
+</profile>

@@ -25,7 +25,7 @@ def convert_docx_to_xml(file_bytes: bytes) -> tuple[str, str]:
 def get_hash(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
-def trigger_auto_download(content: str, filename: str):
+def trigger_auto_download(content: str, filename: str, content_hash: str):
     """Triggers an automatic download in the browser using JavaScript."""
     b64 = base64.b64encode(content.encode()).decode()
     dl_link = f'data:application/xml;base64,{b64}'
@@ -40,7 +40,8 @@ def trigger_auto_download(content: str, filename: str):
         document.body.removeChild(link);
     </script>
     """
-    st.components.v1.html(js, height=0)
+    # Use a unique key to help Streamlit manage the internal media file for this component
+    st.components.v1.html(js, height=0, key=f"auto_dl_{content_hash}")
 
 def main():
     # Page Config
@@ -113,7 +114,7 @@ def main():
             # Check if we should trigger auto-download
             # We trigger it if this is a "new" conversion in this session
             if st.session_state.last_converted_hash != content_hash:
-                trigger_auto_download(pretty_xml, xml_filename)
+                trigger_auto_download(pretty_xml, xml_filename, content_hash)
                 st.session_state.last_converted_hash = content_hash
 
             with col1:

@@ -1,14 +1,36 @@
+import re
 import sys
 import io
 from pathlib import Path
+
 
 import requests
 from docx import Document
 from docx.document import Document as _Document
 
+CMD_ARGS = sys.argv
 OTHER_SUPPORT_BLANK = "https://grants.nih.gov/sites/default/files/other-support-format-page-rev-10-2021.docx"
 OTHER_SUPPORT_SAMPLE = "https://grants.nih.gov/sites/default/files/other-support-sample-7-20-2021.docx"
-CMD_ARGS = sys.argv
+FIELD_LABELS = {
+    "section_header": re.compile(r"^(ACTIVE|PENDING|IN-KIND)", re.IGNORECASE),
+    "name_id": re.compile(r"Name of Individual:\s*(.+?)(?:\s+Commons ID:.*)?$", re.IGNORECASE),
+    "project_title": re.compile(r"Title:\s*", re.IGNORECASE),
+    "major_goals": re.compile(r"Major Goals:\s*", re.IGNORECASE),
+    "status": re.compile(r"Status of Support:\s*", re.IGNORECASE),
+    "role": re.compile(r"Role:\s*", re.IGNORECASE),
+    "project_number": re.compile(r"Project Number:\s*", re.IGNORECASE),
+    "pd_pi": re.compile(r"Name of PD/PI:\s*", re.IGNORECASE),
+    "source": re.compile(r"Source of Support:\s*", re.IGNORECASE),
+    "place": re.compile(r"(?:Primary )?Place of Performance:\s*", re.IGNORECASE),
+    "dates": re.compile(r"Project.*?Date.*?:", re.IGNORECASE),
+    "amount": re.compile(r"Total Award Amount.*?:", re.IGNORECASE),
+    "overlap": re.compile(r"\*?Overlap\s*:\s*", re.IGNORECASE),
+    "person_months_stopper": re.compile(r"Person\s*Months", re.IGNORECASE)
+}
+
+DATE_EXTRACTOR = re.compile(r"(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})\s*[-–]\s*(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})")
+AMOUNT_EXTRACTOR = re.compile(r"\$?([\d,]+)")
+
 
 
 def load_document(doc_input) -> _Document:

@@ -1,7 +1,33 @@
 import html
 import re
 from dataclasses import dataclass
-from typing import Generator, List, Literal, Optional, Protocol, runtime_checkable, Union
+from typing import Generator, List, Literal, Optional, Protocol, runtime_checkable, TypedDict, Union
+
+
+class RawCommitment(TypedDict):
+    year: str
+    effort: str
+
+
+class SupportBuilder(TypedDict, total=False):
+    """
+    This is an intermediate dictionary between the raw input and validated dataclass output.
+
+    ``total`` is ``False`` so that we can incrementally add keys.
+    """
+    projecttitle: str
+    awardnumber: str
+    supportsource: str
+    location: str
+    contributiontype: str
+    awardamount: str
+    inkinddescription: str
+    overallobjectives: str
+    potentialoverlap: str
+    startdate: str
+    enddate: str
+    supporttype: str
+    commitment: List[RawCommitment]
 
 @runtime_checkable
 class Slotted(Protocol):

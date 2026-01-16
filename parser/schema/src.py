@@ -9,47 +9,6 @@ class Slotted(Protocol):
     __slots__: tuple[str, ...]
 
 
-def to_xml(
-        slotted_dc: Slotted,
-        root_tag: Optional[str] = None) -> Generator[str, None, None]:
-    """
-    Base function to convert slotted dataclasses into XML.
-
-    :param slotted_dc: A slotted dataclass from the schema.
-    :param root_tag: Optional root tag for the initial parent.
-    """
-    if root_tag: # clean root tag first in case < or > accidentally included
-        clean_tag = root_tag.removeprefix("<").removesuffix(">")
-        yield f"<{clean_tag}>"
-
-    if not hasattr(slotted_dc, "__slots__"):
-        raise AttributeError(f"ERROR: {type(slotted_dc)} without __slots__ provided.")
-
-    for tag in slotted_dc.__slots__:
-        value = getattr(slotted_dc, tag)
-        if value is None:                   # yield a closed tag
-            yield f"<{tag}/>"
-        elif hasattr(value, "to_xml"):      # call the custom to_xml() method for the class
-            yield value.to_xml()
-        elif hasattr(value, "__slots__"):   # convert children to xml recursively
-            yield f"<{tag}>"
-            yield from to_xml(value)
-            yield f"</{tag}>"
-        elif isinstance(value, list):       # wrap, then yield list of child nodes
-            yield f"<{tag}>"
-            for child in value:
-                child_tag = child.__class__.__name__.lower()
-                yield f"<{child_tag}>"
-                yield from to_xml(child)
-                yield f"</{child_tag}>"
-            yield f"</{tag}>"
-        else:                               # finally, yield base values as strings
-            yield f"<{tag}>{html.escape(str(value))}</{tag}>"
-    if root_tag:
-        clean_tag = root_tag.removeprefix("<").removesuffix(">")
-        yield f"</{clean_tag}>"
-
-
 @dataclass(slots=True)
 class Name:
     """
@@ -140,16 +99,20 @@ class Support:
 
     def __post_init__(self):
         self.projecttitle = (self.projecttitle or "")[:300]
-        self.awardnumber = (self.awardnumber or "")[:50]
         self.location = (self.location or "")[:60]
         self.supportsource = (self.supportsource or "")[:60]
         self.potentialoverlap = (self.potentialoverlap or "")[:5000]
         if not self.startdate: self.startdate = ""
         if not self.enddate: self.enddate = ""
 
+        self._clean_award_number()
         self._clean_amount()
         self._clean_enums()
         self._clean_inkind()
+
+    def _clean_award_number(self):
+        clean_award_num = self.awardnumber.replace(" ", "")
+        self.awardnumber = (clean_award_num or "")[:50]
     
     def _clean_amount(self):
         raw_amt = str(self.awardamount) if self.awardamount is not None else ""

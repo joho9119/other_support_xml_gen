@@ -1,5 +1,6 @@
 import io
 import hashlib
+import base64
 import streamlit as st
 from datetime import datetime
 
@@ -24,6 +25,23 @@ def convert_docx_to_xml(file_bytes: bytes) -> tuple[str, str]:
 def get_hash(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
+def trigger_auto_download(content: str, filename: str):
+    """Triggers an automatic download in the browser using JavaScript."""
+    b64 = base64.b64encode(content.encode()).decode()
+    dl_link = f'data:application/xml;base64,{b64}'
+    # This JS snippet creates a hidden anchor, clicks it, and removes it.
+    js = f"""
+    <script>
+        var link = document.createElement('a');
+        link.href = '{dl_link}';
+        link.download = '{filename}';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    </script>
+    """
+    st.components.v1.html(js, height=0)
+
 def main():
     # Page Config
     st.set_page_config(page_title="NIH Other Support Converter", layout="wide")
@@ -34,9 +52,11 @@ def main():
     This tool parses "Other Support" files and prepares them for upload to SciENcv.
     """)
 
-    # Initialize Session State for history
+    # Initialize Session State
     if 'history' not in st.session_state:
         st.session_state.history = []
+    if 'last_converted_hash' not in st.session_state:
+        st.session_state.last_converted_hash = None
 
     # Sidebar for History
     with st.sidebar:
@@ -44,6 +64,7 @@ def main():
         if st.session_state.history:
             if st.button("Clear History"):
                 st.session_state.history = []
+                st.session_state.last_converted_hash = None
                 st.rerun()
             
             for idx, item in enumerate(reversed(st.session_state.history)):
@@ -84,13 +105,21 @@ def main():
                 "timestamp": timestamp_str
             }
             # Avoid duplicate consecutive entries
-            if not st.session_state.history or st.session_state.history[-1]["xml"] != pretty_xml:
+            is_new_conversion = not st.session_state.history or st.session_state.history[-1]["xml"] != pretty_xml
+            
+            if is_new_conversion:
                 st.session_state.history.append(history_item)
+            
+            # Check if we should trigger auto-download
+            # We trigger it if this is a "new" conversion in this session
+            if st.session_state.last_converted_hash != content_hash:
+                trigger_auto_download(pretty_xml, xml_filename)
+                st.session_state.last_converted_hash = content_hash
 
             with col1:
                 st.success(f"Conversion Successful: {xml_filename}")
                 st.download_button(
-                    label="Download XML",
+                    label="Download XML (Manual)",
                     data=pretty_xml,
                     file_name=xml_filename,
                     mime="application/xml",
@@ -104,6 +133,9 @@ def main():
         except Exception as e:
             st.error(f"Error parsing file: {e}")
             st.exception(e)
+    else:
+        # Reset last converted hash if no file is uploaded (to allow re-uploading same file)
+        st.session_state.last_converted_hash = None
 
 if __name__ == "__main__":
     main()

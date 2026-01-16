@@ -40,8 +40,7 @@ def trigger_auto_download(content: str, filename: str, content_hash: str):
         document.body.removeChild(link);
     </script>
     """
-    # Use a unique key to help Streamlit manage the internal media file for this component
-    st.components.v1.html(js, height=0, key=f"auto_dl_{content_hash}")
+    st.components.v1.html(js, height=0)
 
 def main():
     # Page Config

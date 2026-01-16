@@ -40,6 +40,7 @@ def trigger_auto_download(content: str, filename: str, content_hash: str):
         document.body.removeChild(link);
     </script>
     """
+    # Trigger automatic download
     st.components.v1.html(js, height=0)
 
 def main():

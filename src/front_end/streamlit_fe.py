@@ -28,13 +28,16 @@ def main():
                 st.rerun()
             
             for idx, item in enumerate(reversed(st.session_state.history)):
+                # Use a more unique key based on the timestamp/filename to avoid collision during re-renders
+                # and to help Streamlit track the media file correctly.
+                unique_key = f"hist_{item['timestamp']}_{idx}"
                 with st.expander(f"{item['filename']} ({item['timestamp']})"):
                     st.download_button(
                         label="Download Again",
                         data=item['xml'],
                         file_name=item['xml_filename'],
                         mime="text/xml",
-                        key=f"hist_{idx}"
+                        key=unique_key
                     )
         else:
             st.info("No history yet. Convert a file to see it here.")
@@ -59,13 +62,14 @@ def main():
             pretty_xml = prettify_xml(final_xml)
             
             xml_filename = profile.xml_file_name
+            timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             # Store in history
             history_item = {
                 "filename": uploaded_file.name,
                 "xml_filename": xml_filename,
                 "xml": pretty_xml,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "timestamp": timestamp_str
             }
             # Avoid duplicate consecutive entries
             if not st.session_state.history or st.session_state.history[-1]["xml"] != pretty_xml:
@@ -77,7 +81,8 @@ def main():
                     label="Download XML",
                     data=pretty_xml,
                     file_name=xml_filename,
-                    mime="text/xml"
+                    mime="text/xml",
+                    key=f"main_download_{timestamp_str}"
                 )
 
             with col2:

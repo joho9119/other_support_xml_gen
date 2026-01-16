@@ -1,4 +1,5 @@
 import io
+import hashlib
 import streamlit as st
 from datetime import datetime
 
@@ -6,8 +7,8 @@ from src.parser.from_docx import parse_docx
 from src.parser.to_xml import prettify_xml, to_xml
 
 @st.cache_data
-def convert_docx_to_xml(file_bytes: bytes) -> tuple[str, str, str]:
-    """Parses DOCX bytes and returns (pretty_xml, xml_filename, timestamp)."""
+def convert_docx_to_xml(file_bytes: bytes) -> tuple[str, str]:
+    """Parses DOCX bytes and returns (pretty_xml, xml_filename)."""
     input_bytes = io.BytesIO(file_bytes)
     profile = parse_docx(input_bytes)
     
@@ -17,9 +18,11 @@ def convert_docx_to_xml(file_bytes: bytes) -> tuple[str, str, str]:
     pretty_xml = prettify_xml(final_xml)
     
     xml_filename = profile.xml_file_name
-    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     
-    return pretty_xml, xml_filename, timestamp_str
+    return pretty_xml, xml_filename
+
+def get_hash(content: str) -> str:
+    return hashlib.md5(content.encode()).hexdigest()
 
 def main():
     # Page Config
@@ -44,9 +47,9 @@ def main():
                 st.rerun()
             
             for idx, item in enumerate(reversed(st.session_state.history)):
-                # Use a more unique key based on the timestamp/filename to avoid collision during re-renders
-                # and to help Streamlit track the media file correctly.
-                unique_key = f"hist_{item['timestamp']}_{idx}"
+                # Use the content hash + index to ensure stability and uniqueness
+                content_hash = get_hash(item['xml'])
+                unique_key = f"hist_{content_hash}_{idx}"
                 with st.expander(f"{item['filename']} ({item['timestamp']})"):
                     st.download_button(
                         label="Download Again",
@@ -68,14 +71,17 @@ def main():
         try:
             # Read file into memory and use cached converter
             file_bytes = uploaded_file.getvalue()
-            pretty_xml, xml_filename, timestamp_str = convert_docx_to_xml(file_bytes)
+            pretty_xml, xml_filename = convert_docx_to_xml(file_bytes)
             
+            content_hash = get_hash(pretty_xml)
+            timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
             # Store in history
             history_item = {
                 "filename": uploaded_file.name,
                 "xml_filename": xml_filename,
                 "xml": pretty_xml,
-                "timestamp": timestamp_str.replace("_", " ") # Display format
+                "timestamp": timestamp_str
             }
             # Avoid duplicate consecutive entries
             if not st.session_state.history or st.session_state.history[-1]["xml"] != pretty_xml:
@@ -88,7 +94,7 @@ def main():
                     data=pretty_xml,
                     file_name=xml_filename,
                     mime="application/xml",
-                    key=f"main_download_{timestamp_str}"
+                    key=f"main_download_{content_hash}"
                 )
 
             with col2:

@@ -21,6 +21,7 @@ def main():
 
     except Exception as e:
         print(f"Error processing file: {e}")
+        print(f"XML generated: {xml_string}")
 
 
 if __name__ == "__main__":

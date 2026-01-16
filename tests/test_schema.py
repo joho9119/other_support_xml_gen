@@ -1,10 +1,11 @@
 import pytest
 
-from parser.schema import (
+from src.schema import (
     SciENcvProfile,
     Identification, Name, Position, Organization, Year, Support, PersonMonth
 )
-from parser.from_docx.src import to_xml
+from src.parser.from_docx import parse_docx
+from src.parser.to_xml import to_xml
 
 
 @pytest.fixture

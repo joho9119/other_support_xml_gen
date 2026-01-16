@@ -1,5 +1,5 @@
-from parser.from_docx import parse_docx
-from parser.from_docx.src import to_xml, prettify_xml
+from src.parser.from_docx import parse_docx
+from src.parser.to_xml import to_xml, prettify_xml
 
 def main():
     OTHER_SUPPORT_SAMPLE = "https://grants.nih.gov/sites/default/files/other-support-sample-7-20-2021.docx"

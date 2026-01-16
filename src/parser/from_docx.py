@@ -1,12 +1,10 @@
-import html
 import io
 import re
 import sys
 
 from datetime import datetime
 from pathlib import Path
-from typing import Generator, List, Optional
-from xml.dom import minidom
+from typing import List, Optional, Union
 
 import requests
 from docx import Document
@@ -15,7 +13,8 @@ from docx.oxml import CT_P, CT_Tbl
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
-from parser.schema.src import Slotted, SciENcvProfile, Support, PersonMonth, Identification, Name, RenderEmptyMixin
+from src.schema import SciENcvProfile, Support, PersonMonth, Identification, Name
+from .to_xml import prettify_xml, to_xml
 
 CMD_ARGS = sys.argv
 AMOUNT_EXTRACTOR = re.compile(r"\$?([\d,]+)")
@@ -65,75 +64,12 @@ DEFAULT_SUPPORT_TEMPLATE = {
 """This acts as the "schema" for the builder and is copied for each new project found."""
 
 
-def to_xml(
-        slotted_dc: Slotted,
-        root_tag: Optional[str] = None) -> Generator[str, None, None]:
-    """
-    Base function to convert slotted dataclasses into XML.
-
-    :param slotted_dc: A slotted dataclass from the schema.
-    :param root_tag: Optional root tag for the initial parent.
-    """
-    if root_tag: # clean root tag first in case < or > accidentally included
-        clean_tag = root_tag.removeprefix("<").removesuffix(">")
-        yield f"<{clean_tag}>"
-
-    if not hasattr(slotted_dc, "__slots__"):
-        raise AttributeError(f"ERROR: {type(slotted_dc)} without __slots__ provided.")
-
-    render_all = isinstance(slotted_dc, RenderEmptyMixin)
-
-    for tag in slotted_dc.__slots__:
-        value = getattr(slotted_dc, tag)
-        is_empty = value is None or (isinstance(value, str) and value == "")
-
-        if is_empty:
-            if render_all:
-                yield f"<{tag}/>"
-            else:
-                continue
-            continue # Either skipped or emitted empty tag
-
-        elif hasattr(value, "to_xml"):      # call the custom to_xml() method for the class
-            yield value.to_xml()
-
-        elif hasattr(value, "__slots__"):   # convert children to xml recursively
-            yield f"<{tag}>"
-            yield from to_xml(value)
-            yield f"</{tag}>"
-
-        elif isinstance(value, list):       # wrap, then yield list of child nodes
-            yield f"<{tag}>"
-            for child in value:
-                if hasattr(child, "to_xml"):
-                    yield child.to_xml()
-                else:
-                    child_tag = child.__class__.__name__.lower()
-                    if hasattr(child, "__slots__"):
-                        yield f"<{child_tag}>"
-                        yield from to_xml(child)
-                        yield f"</{child_tag}>"
-            yield f"</{tag}>"
-        else: # finally, yield base values as strings
-            yield f"<{tag}>{html.escape(str(value))}</{tag}>"
-    if root_tag:
-        clean_tag = root_tag.removeprefix("<").removesuffix(">")
-        yield f"</{clean_tag}>"
-
-    
-def prettify_xml(raw_xml, spaces=2):
-    """Pretty prints but keeps data fields (like <year>2025</year>) on one line."""
-    domified = minidom.parseString(raw_xml)
-    pretty_xml = domified.toprettyxml(indent=" "*spaces)
-    return re.sub(r'>\n\s+([^<>\n]+)\n\s*</', r'>\1</', pretty_xml)
-
-
-def clean_text(text: str) -> str:
+def _clean_text(text: str) -> str:
     if not text: return ""
     return text.strip().translate(TRANSLATION_TABLE).strip(" *_")
 
 
-def parse_date_str(date_str: str) -> str:
+def _parse_date_str(date_str: str) -> str:
     if not date_str: return ""
     date_str = date_str.strip(" *_")
     for fmt in DATE_FORMATS:
@@ -145,14 +81,14 @@ def parse_date_str(date_str: str) -> str:
     return ""
 
 
-def extract_dates(text: str) -> tuple[str, str]:
+def _extract_dates(text: str) -> tuple[str, str]:
     match = DATE_EXTRACTOR.search(text)
     if match:
-        return parse_date_str(match.group(1)), parse_date_str(match.group(2))
+        return _parse_date_str(match.group(1)), _parse_date_str(match.group(2))
     return "", ""
 
 
-def iter_block_items(parent: _Document):
+def _iter_block_items(parent: _Document):
     if isinstance(parent, _Document):
         parent_elm = parent.element.body
     else:
@@ -189,7 +125,7 @@ def _update_field(builder: dict, raw_key: str, text: str, append: bool = False):
         case "dates":
             # Date logic is unique, so handled manually
             if not append:
-                s, e = extract_dates(text)
+                s, e = _extract_dates(text)
                 builder["startdate"] = s
                 builder["enddate"] = e
         case _: pass
@@ -304,9 +240,11 @@ def _process_table(table: Table, builder: dict):
         builder["commitment"].extend(rows)
 
 
-def parse_docx(doc_input: str) -> SciENcvProfile:
+def parse_docx(doc_input: Union[str, Path, io.BytesIO]) -> SciENcvProfile:
     # 1. LOAD DOCUMENT OBJECT
-    if str(doc_input).startswith("http"):
+    if isinstance(doc_input, io.BytesIO):
+        doc = Document(doc_input)
+    elif str(doc_input).startswith("http"):
         r = requests.get(doc_input)
         r.raise_for_status()
         doc = Document(io.BytesIO(r.content))
@@ -323,11 +261,11 @@ def parse_docx(doc_input: str) -> SciENcvProfile:
     last_field_key = None
 
     # 3. PARSING LOOP
-    for block in iter_block_items(doc):
+    for block in _iter_block_items(doc):
 
         # --- PARAGRAPH HANDLING ---
         if isinstance(block, Paragraph):
-            text = clean_text(block.text)
+            text = _clean_text(block.text)
             if not text:
                 continue
 

@@ -2,9 +2,11 @@
 name = "wordparser"
 version = "0.1.0"
 description = "Parses Other Support Common Form to XML for upload into SciENcv."
-requires-python = ">=3.14"
+requires-python = ">=3.12, <3.14"
 dependencies = [
     "pytest==9.0.2",
     "python-docx==1.2.0",
     "requests",
+    "protobuf==5.29.5",
+    "streamlit==1.53.0",
 ]

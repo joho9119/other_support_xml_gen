@@ -1,6 +1,5 @@
 from parser.schema.src import (
-    
-    to_xml,
+    Slotted,
 
     Name, Identification,
     Year, Organization, Position, PersonMonth, Support,

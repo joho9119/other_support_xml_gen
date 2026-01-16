@@ -1,10 +1,11 @@
 import pytest
 
 from parser.schema import (
-    to_xml,
     SciENcvProfile,
     Identification, Name, Position, Organization, Year, Support, PersonMonth
 )
+from parser.from_docx.src import to_xml
+
 
 @pytest.fixture
 def clean_profile_data():

@@ -1,9 +1,12 @@
+import html
 import io
 import re
 import sys
+
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Generator, List, Optional
+from xml.dom import minidom
 
 import requests
 from docx import Document
@@ -13,8 +16,7 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 
 from parser.schema import (
-    to_xml,
-    SciENcvProfile, Support, PersonMonth, Identification, Name)
+    Slotted, SciENcvProfile, Support, PersonMonth, Identification, Name)
 
 CMD_ARGS = sys.argv
 OTHER_SUPPORT_BLANK = "https://grants.nih.gov/sites/default/files/other-support-format-page-rev-10-2021.docx"
@@ -24,6 +26,7 @@ AMOUNT_EXTRACTOR = re.compile(r"\$?([\d,]+)")
 DATE_EXTRACTOR = re.compile(
     r"(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})\s*[-–]\s*(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})"
 )
+YEAR_EXTRACTOR = re.compile(r"\b(20\d{2})\b")
 FIELD_LABELS = {
     "section_header":        re.compile(r"^(ACTIVE|PENDING|IN-KIND)", re.IGNORECASE),
     "name_id":               re.compile(r"Name of Individual:\s*(.+?)(?:\s+Commons ID:.*)?$", re.IGNORECASE),
@@ -64,6 +67,53 @@ DEFAULT_SUPPORT_TEMPLATE = {
     "commitment": []             # List of dicts [{"year": "2025", "effort": "1.2"}]
 }
 """This acts as the "schema" for the builder and is copied for each new project found."""
+
+
+def to_xml(
+        slotted_dc: Slotted,
+        root_tag: Optional[str] = None) -> Generator[str, None, None]:
+    """
+    Base function to convert slotted dataclasses into XML.
+
+    :param slotted_dc: A slotted dataclass from the schema.
+    :param root_tag: Optional root tag for the initial parent.
+    """
+    if root_tag: # clean root tag first in case < or > accidentally included
+        clean_tag = root_tag.removeprefix("<").removesuffix(">")
+        yield f"<{clean_tag}>"
+
+    if not hasattr(slotted_dc, "__slots__"):
+        raise AttributeError(f"ERROR: {type(slotted_dc)} without __slots__ provided.")
+
+    for tag in slotted_dc.__slots__:
+        value = getattr(slotted_dc, tag)
+        if value is None:                   # yield a closed tag
+            continue
+        elif hasattr(value, "to_xml"):      # call the custom to_xml() method for the class
+            yield value.to_xml()
+        elif hasattr(value, "__slots__"):   # convert children to xml recursively
+            yield f"<{tag}>"
+            yield from to_xml(value)
+            yield f"</{tag}>"
+        elif isinstance(value, list):       # wrap, then yield list of child nodes
+            yield f"<{tag}>"
+            for child in value:
+                child_tag = child.__class__.__name__.lower()
+                yield f"<{child_tag}>"
+                yield from to_xml(child)
+                yield f"</{child_tag}>"
+            yield f"</{tag}>"
+        else:                               # finally, yield base values as strings
+            yield f"<{tag}>{html.escape(str(value))}</{tag}>"
+    if root_tag:
+        clean_tag = root_tag.removeprefix("<").removesuffix(">")
+        yield f"</{clean_tag}>"
+
+
+def prettify_xml(raw_xml, spaces=2):
+    domified = minidom.parseString(raw_xml)
+    pretty_xml = domified.toprettyxml(indent=" "*spaces)
+    return pretty_xml
 
 
 def clean_text(text: str) -> str:
@@ -232,28 +282,23 @@ def _process_table(table: Table, builder: dict):
     for row in table.rows[start_row_index:]:
         cells = [c.text.strip() for c in row.cells]
         if len(cells) >= 2:
-            year = re.sub(r"[^\d]", "", cells[0])
+            year_match = YEAR_EXTRACTOR.search(cells[0])
+            year = year_match.group(1) if year_match else ""
             effort = cells[1].lower().replace("calendar", "").strip()
             if year and effort:
                 rows.append({"year": year, "effort": effort})
-
     if rows:
         builder["commitment"].extend(rows)
 
 
 def parse_docx(doc_input: str) -> SciENcvProfile:
-    # 1. LOAD DOCUMENT
+    # 1. LOAD DOCUMENT OBJECT
     if str(doc_input).startswith("http"):
-        print(f"Fetching document from URL: {doc_input}")
-        response = requests.get(doc_input)
-        response.raise_for_status()
-        doc_source = io.BytesIO(response.content)
+        r = requests.get(doc_input)
+        r.raise_for_status()
+        doc = Document(io.BytesIO(r.content))
     else:
-        doc_source = Path(doc_input)
-        if not doc_source.exists():
-            raise ValueError(f"File not found: {doc_input}")
-
-    doc = Document(doc_source)
+        doc = Document(Path(doc_input).__str__())
 
     # 2. STATE INITIALIZATION
     name_parts = {"firstname": "", "middlename": "", "lastname": ""}
@@ -336,11 +381,13 @@ def main():
         # serialize
         xml_gen = to_xml(profile, root_tag="profile")
         xml_string = "".join(xml_gen)
+        # prettify
+        prettyxml = prettify_xml(xml_string)
         # print to console
-        print(xml_string)
+        print(prettyxml)
         # write to file
         with open(profile.xml_file_name, "w") as f:
-             f.write(xml_string)
+             f.write(prettyxml)
 
     except Exception as e:
         print(f"Error processing file: {e}")

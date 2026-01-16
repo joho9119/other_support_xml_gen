@@ -1,8 +1,7 @@
-import html
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Generator, List, Literal, Optional, Protocol, runtime_checkable, TypedDict, Union
+from typing import List, Literal, Optional, Protocol, runtime_checkable, Union
 
 
 @runtime_checkable
@@ -58,13 +57,12 @@ class Name:
         <profile> => <identification> => <name>
     """
     firstname: str
-    middlename: str
+    middlename: str | None
     lastname: str
 
     def __post_init__(self):
         if not self.firstname: raise ValueError("No firstname provided.")
         if not self.lastname: raise ValueError("No lastname provided.")
-        if not self.middlename: self.middlename = ""
 
 
 @dataclass(slots=True)

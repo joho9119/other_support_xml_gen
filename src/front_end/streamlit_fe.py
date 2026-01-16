@@ -5,6 +5,22 @@ from datetime import datetime
 from src.parser.from_docx import parse_docx
 from src.parser.to_xml import prettify_xml, to_xml
 
+@st.cache_data
+def convert_docx_to_xml(file_bytes: bytes) -> tuple[str, str, str]:
+    """Parses DOCX bytes and returns (pretty_xml, xml_filename, timestamp)."""
+    input_bytes = io.BytesIO(file_bytes)
+    profile = parse_docx(input_bytes)
+    
+    # Generate XML
+    raw_xml = "".join(to_xml(profile, root_tag="profile"))
+    final_xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + raw_xml
+    pretty_xml = prettify_xml(final_xml)
+    
+    xml_filename = profile.xml_file_name
+    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    return pretty_xml, xml_filename, timestamp_str
+
 def main():
     # Page Config
     st.set_page_config(page_title="NIH Other Support Converter", layout="wide")
@@ -36,7 +52,7 @@ def main():
                         label="Download Again",
                         data=item['xml'],
                         file_name=item['xml_filename'],
-                        mime="text/xml",
+                        mime="application/xml",
                         key=unique_key
                     )
         else:
@@ -50,26 +66,16 @@ def main():
 
     if uploaded_file is not None:
         try:
-            # Read file into memory
-            input_bytes = io.BytesIO(uploaded_file.getbuffer())
+            # Read file into memory and use cached converter
+            file_bytes = uploaded_file.getvalue()
+            pretty_xml, xml_filename, timestamp_str = convert_docx_to_xml(file_bytes)
             
-            # Run parser
-            profile = parse_docx(input_bytes)
-
-            # Generate XML
-            raw_xml = "".join(to_xml(profile, root_tag="profile"))
-            final_xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + raw_xml
-            pretty_xml = prettify_xml(final_xml)
-            
-            xml_filename = profile.xml_file_name
-            timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
             # Store in history
             history_item = {
                 "filename": uploaded_file.name,
                 "xml_filename": xml_filename,
                 "xml": pretty_xml,
-                "timestamp": timestamp_str
+                "timestamp": timestamp_str.replace("_", " ") # Display format
             }
             # Avoid duplicate consecutive entries
             if not st.session_state.history or st.session_state.history[-1]["xml"] != pretty_xml:
@@ -81,7 +87,7 @@ def main():
                     label="Download XML",
                     data=pretty_xml,
                     file_name=xml_filename,
-                    mime="text/xml",
+                    mime="application/xml",
                     key=f"main_download_{timestamp_str}"
                 )
 

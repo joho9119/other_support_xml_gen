@@ -8,9 +8,17 @@ from typing import List, Literal, Optional, Protocol, runtime_checkable, Union
 class Slotted(Protocol):
     __slots__: tuple[str, ...]
 
+class RenderEmptyMixin:
+    """Signal to render all tags for the subclass, even if value is None."""
+    pass
+
+class SkipEmptyMixin:
+    """Signal to skip empty tags for the subclass if value is None."""
+    pass
+
 
 @dataclass(slots=True)
-class Name:
+class Name(SkipEmptyMixin):
     """
     Heirarchy:
         <profile> => <identification> => <name>
@@ -22,20 +30,21 @@ class Name:
     def __post_init__(self):
         if not self.firstname: raise ValueError("No firstname provided.")
         if not self.lastname: raise ValueError("No lastname provided.")
+        if not self.middlename: self.middlename = None
 
 
 @dataclass(slots=True)
-class Identification:
+class Identification(SkipEmptyMixin):
     name: Name
 
 
 @dataclass(slots=True)
-class Year:
+class Year(SkipEmptyMixin):
     year: int
 
 
 @dataclass(slots=True)
-class Organization:
+class Organization(SkipEmptyMixin):
     """Always associated with a Position."""
     orgname: str
     city: str
@@ -49,7 +58,7 @@ class Organization:
                 setattr(self, tag, "") # sets to blank string if not present
 
 @dataclass(slots=True)
-class Position:
+class Position(SkipEmptyMixin):
     """
     Heirarchy:
         <profile> => <identification> => <position>
@@ -68,7 +77,7 @@ class Position:
 
 
 @dataclass(slots=True)
-class PersonMonth:
+class PersonMonth(SkipEmptyMixin):
     """
     Year is inserted into tag as attribute.
     e.g. <personmonth year="2025">12</personmonth>
@@ -82,7 +91,7 @@ class PersonMonth:
 
 
 @dataclass(slots=True)
-class Support:
+class Support(RenderEmptyMixin):
     projecttitle: str
     awardnumber: str
     supportsource: str
@@ -112,7 +121,7 @@ class Support:
 
     def _clean_award_number(self):
         clean_award_num = self.awardnumber.replace(" ", "")
-        self.awardnumber = (clean_award_num or "")[:50]
+        self.awardnumber = (clean_award_num or "N/A")[:50]
     
     def _clean_amount(self):
         raw_amt = str(self.awardamount) if self.awardamount is not None else ""
@@ -136,26 +145,20 @@ class Support:
 
 
 @dataclass(slots=True)
-class SciENcvProfile:
+class SciENcvProfile(RenderEmptyMixin):
     identification: Identification
     employment: List[Position]
     funding: List[Support]
 
     @property
-    def last_name(self):
-        return self.identification.name.lastname
-
-    @property
-    def first_name(self):
-        return self.identification.name.firstname
-
-    @property
     def xml_file_name(self):
         """Returns a filename dependent on the found first/last name and timestamp for uniqueness."""
-        if self.first_name and self.last_name:
-            name = self.last_name + "_" + self.first_name
-        elif self.first_name and not self.last_name:
-            name = self.first_name
+        last_name = self.identification.name.lastname
+        first_name = self.identification.name.firstname
+        if first_name and last_name:
+            name = last_name + "_" + first_name
+        elif first_name and not last_name:
+            name = first_name
         else:
             name = "no_name_found"
         timestamp = "_".join([

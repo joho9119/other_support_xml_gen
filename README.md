@@ -1,3 +1,7 @@
+A very big thank you to the python-docx folks. This would not be doable for a newbie like me without the heavy lifting of the contributors maintaining that library! :)
+                                                         
+I will add in additional use criteria/readme info as this library comes together. Welcoming feedback on the preliminary code as of now.
+
 ## References
 - Docs: https://support.nlm.nih.gov/kbArticle/?pn=KA-05499
 - Schema: https://ftp.ncbi.nlm.nih.gov/pub/sciencv/cposXML/sample-blank.xml

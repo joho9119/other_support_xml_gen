@@ -1,33 +1,9 @@
 import html
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Generator, List, Literal, Optional, Protocol, runtime_checkable, TypedDict, Union
 
-
-class RawCommitment(TypedDict):
-    year: str
-    effort: str
-
-
-class SupportBuilder(TypedDict, total=False):
-    """
-    This is an intermediate dictionary between the raw input and validated dataclass output.
-
-    ``total`` is ``False`` so that we can incrementally add keys.
-    """
-    projecttitle: str
-    awardnumber: str
-    supportsource: str
-    location: str
-    contributiontype: str
-    awardamount: str
-    inkinddescription: str
-    overallobjectives: str
-    potentialoverlap: str
-    startdate: str
-    enddate: str
-    supporttype: str
-    commitment: List[RawCommitment]
 
 @runtime_checkable
 class Slotted(Protocol):
@@ -203,3 +179,29 @@ class SciENcvProfile:
     identification: Identification
     employment: List[Position]
     funding: List[Support]
+
+    @property
+    def last_name(self):
+        return self.identification.name.lastname
+
+    @property
+    def first_name(self):
+        return self.identification.name.firstname
+
+    @property
+    def xml_file_name(self):
+        """Returns a filename dependent on the found first/last name and timestamp for uniqueness."""
+        if self.first_name and self.last_name:
+            name = self.last_name + "_" + self.first_name
+        elif self.first_name and not self.last_name:
+            name = self.first_name
+        else:
+            name = "no_name_found"
+        timestamp = "_".join([
+            part.split(".")[0].replace(":", "-")
+            for part in datetime.now().isoformat().split("T")
+            ])
+        return name + "_" + timestamp + ".xml"
+        
+
+

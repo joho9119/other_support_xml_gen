@@ -19,9 +19,6 @@ from parser.schema import (
     Slotted, SciENcvProfile, Support, PersonMonth, Identification, Name)
 
 CMD_ARGS = sys.argv
-OTHER_SUPPORT_BLANK = "https://grants.nih.gov/sites/default/files/other-support-format-page-rev-10-2021.docx"
-OTHER_SUPPORT_SAMPLE = "https://grants.nih.gov/sites/default/files/other-support-sample-7-20-2021.docx"
-
 AMOUNT_EXTRACTOR = re.compile(r"\$?([\d,]+)")
 DATE_EXTRACTOR = re.compile(
     r"(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})\s*[-–]\s*(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})"
@@ -109,7 +106,7 @@ def to_xml(
         clean_tag = root_tag.removeprefix("<").removesuffix(">")
         yield f"</{clean_tag}>"
 
-
+    
 def prettify_xml(raw_xml, spaces=2):
     domified = minidom.parseString(raw_xml)
     pretty_xml = domified.toprettyxml(indent=" "*spaces)

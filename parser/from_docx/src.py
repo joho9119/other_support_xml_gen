@@ -365,12 +365,10 @@ def parse_docx(doc_input: str) -> SciENcvProfile:
 
 def main():
     if len(CMD_ARGS) < 2:
-        print("Usage: python parse_os.py {path_to_docx}")
-        # Default to sample if running in IDE without args
-        doc_input = OTHER_SUPPORT_SAMPLE
+        raise OSError("Usage: python parse_os.py {path_to_docx}")
     else:
         arg = CMD_ARGS[1]
-        doc_input = OTHER_SUPPORT_SAMPLE if arg.lower() == "sample" else arg
+        doc_input = arg
 
     try:
         # parse

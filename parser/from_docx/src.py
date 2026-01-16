@@ -15,8 +15,7 @@ from docx.oxml import CT_P, CT_Tbl
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
-from parser.schema import (
-    Slotted, SciENcvProfile, Support, PersonMonth, Identification, Name)
+from parser.schema.src import Slotted, SciENcvProfile, Support, PersonMonth, Identification, Name, RenderEmptyMixin
 
 CMD_ARGS = sys.argv
 AMOUNT_EXTRACTOR = re.compile(r"\$?([\d,]+)")
@@ -82,25 +81,40 @@ def to_xml(
     if not hasattr(slotted_dc, "__slots__"):
         raise AttributeError(f"ERROR: {type(slotted_dc)} without __slots__ provided.")
 
+    render_all = isinstance(slotted_dc, RenderEmptyMixin)
+
     for tag in slotted_dc.__slots__:
         value = getattr(slotted_dc, tag)
-        if value is None:                   # yield a closed tag
-            continue
+        is_empty = value is None or (isinstance(value, str) and value == "")
+
+        if is_empty:
+            if render_all:
+                yield f"<{tag}/>"
+            else:
+                continue
+            continue # Either skipped or emitted empty tag
+
         elif hasattr(value, "to_xml"):      # call the custom to_xml() method for the class
             yield value.to_xml()
+
         elif hasattr(value, "__slots__"):   # convert children to xml recursively
             yield f"<{tag}>"
             yield from to_xml(value)
             yield f"</{tag}>"
+
         elif isinstance(value, list):       # wrap, then yield list of child nodes
             yield f"<{tag}>"
             for child in value:
-                child_tag = child.__class__.__name__.lower()
-                yield f"<{child_tag}>"
-                yield from to_xml(child)
-                yield f"</{child_tag}>"
+                if hasattr(child, "to_xml"):
+                    yield child.to_xml()
+                else:
+                    child_tag = child.__class__.__name__.lower()
+                    if hasattr(child, "__slots__"):
+                        yield f"<{child_tag}>"
+                        yield from to_xml(child)
+                        yield f"</{child_tag}>"
             yield f"</{tag}>"
-        else:                               # finally, yield base values as strings
+        else: # finally, yield base values as strings
             yield f"<{tag}>{html.escape(str(value))}</{tag}>"
     if root_tag:
         clean_tag = root_tag.removeprefix("<").removesuffix(">")
@@ -108,9 +122,10 @@ def to_xml(
 
     
 def prettify_xml(raw_xml, spaces=2):
+    """Pretty prints but keeps data fields (like <year>2025</year>) on one line."""
     domified = minidom.parseString(raw_xml)
     pretty_xml = domified.toprettyxml(indent=" "*spaces)
-    return pretty_xml
+    return re.sub(r'>\n\s+([^<>\n]+)\n\s*</', r'>\1</', pretty_xml)
 
 
 def clean_text(text: str) -> str:
@@ -124,7 +139,7 @@ def parse_date_str(date_str: str) -> str:
     for fmt in DATE_FORMATS:
         try:
             dt = datetime.strptime(date_str, fmt)
-            if "d" not in fmt: return dt.strftime("%Y-%m-%01")
+            if "d" not in fmt: return dt.strftime("%Y-%m-01")
             return dt.strftime("%Y-%m-%d")
         except ValueError: continue
     return ""
@@ -215,7 +230,7 @@ def _parse_name(text: str, name_parts: dict) -> bool:
             rest = parts[1].strip().split()
             if rest:
                 name_parts["firstname"] = rest[0]
-                name_parts["middlename"] = " ".join(rest[1:]) if len(rest) > 1 else ""
+                name_parts["middlename"] = " ".join(rest[1:]) if len(rest) > 1 else None
         else:
             parts = full_name.split(" ")
             if len(parts) == 2:
@@ -224,7 +239,8 @@ def _parse_name(text: str, name_parts: dict) -> bool:
             else:
                 name_parts["firstname"] = parts[0]
                 name_parts["lastname"] = parts.pop()
-                name_parts["middlename"] = "".join(parts[1:])
+                middle_name = "".join(parts[1:])
+                name_parts["middlename"] = middle_name if middle_name else None
         return True
     return False
 

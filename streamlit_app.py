@@ -1,7 +1,5 @@
-import inspect
 import sys
 from pathlib import Path
-from streamlit.web import bootstrap
 
 def main() -> None:
     project_root = Path(__file__).resolve().parent
@@ -13,30 +11,26 @@ def main() -> None:
     # If running inside Streamlit, just import and run the app logic
     # This prevents "Runtime instance already exists" error on platforms like Streamlit Cloud
     import streamlit as st
-    if st._is_running_with_streamlit:
+    runtime = getattr(st, "runtime", None)
+    is_running_with_streamlit = False
+    if runtime is not None and hasattr(runtime, "exists"):
+        try:
+            is_running_with_streamlit = runtime.exists()
+        except Exception:
+            is_running_with_streamlit = False
+
+    if is_running_with_streamlit:
         from src.front_end.streamlit_fe import main as app_main
         app_main()
         return
 
-    # Otherwise, bootstrap the streamlit runtime (standard for local execution via `python streamlit_app.py`)
-    run_sig = inspect.signature(bootstrap.run)
-    kwargs = {}
-
-    if "main_script_path" in run_sig.parameters:
-        kwargs["main_script_path"] = str(app_path)
-    else:
-        kwargs["path"] = str(app_path)
-
-    if "command_line" in run_sig.parameters:
-        kwargs["command_line"] = "streamlit run"
-    if "args" in run_sig.parameters:
-        kwargs["args"] = []
-    if "flag_options" in run_sig.parameters:
-        kwargs["flag_options"] = {}
-    if "is_hello" in run_sig.parameters:
-        kwargs["is_hello"] = False
-
-    bootstrap.run(**kwargs)
+    # Otherwise, launch Streamlit in a separate process to avoid shutdown loop errors
+    import subprocess
+    subprocess.run(
+        ["streamlit", "run", str(app_path)],
+        check=False
+    )
+    return
 
 
 if __name__ == "__main__":

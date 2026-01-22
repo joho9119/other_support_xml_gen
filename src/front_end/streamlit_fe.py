@@ -2,6 +2,7 @@ import io
 import base64
 import streamlit as st
 
+from src.schema import WordParserError
 from src.parser.from_docx import parse_docx
 from src.parser.to_xml import prettify_xml, to_xml
 
@@ -66,8 +67,12 @@ def main():
                     st.session_state["last_uploaded_id"] = current_file_id
                     st.success(f"Processed: {record['filename']}")
 
+                except WordParserError as e:
+                    st.error(f"⚠️ {e}")
+                    with st.expander("Technical details"):
+                        st.exception(e)
                 except Exception as e:
-                    st.error(f"Error parsing file: {e}")
+                    st.error(f"An unexpected error occurred: {e}")
                     st.exception(e)
 
         st.divider()

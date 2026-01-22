@@ -3,7 +3,7 @@ import re
 from typing import Generator, Optional
 from xml.dom import minidom
 
-from src.schema import RenderEmptyMixin, Slotted
+from src.schema import RenderEmptyMixin, Slotted, XMLGenerationError
 
 
 def to_xml(
@@ -25,38 +25,47 @@ def to_xml(
     render_all = isinstance(slotted_dc, RenderEmptyMixin)
 
     for tag in slotted_dc.__slots__:
-        value = getattr(slotted_dc, tag)
-        is_empty = value is None or (isinstance(value, str) and value == "")
+        try:
+            value = getattr(slotted_dc, tag)
+            is_empty = value is None or (isinstance(value, str) and value == "")
 
-        if is_empty:
-            if render_all:
-                yield f"<{tag}/>"
-            else:
-                continue
-            continue # Either skipped or emitted empty tag
-
-        elif hasattr(value, "to_xml"):      # call the custom to_xml() method for the class
-            yield value.to_xml()
-
-        elif hasattr(value, "__slots__"):   # convert children to xml recursively
-            yield f"<{tag}>"
-            yield from to_xml(value)
-            yield f"</{tag}>"
-
-        elif isinstance(value, list):       # wrap, then yield list of child nodes
-            yield f"<{tag}>"
-            for child in value:
-                if hasattr(child, "to_xml"):
-                    yield child.to_xml()
+            if is_empty:
+                if render_all:
+                    yield f"<{tag}/>"
                 else:
-                    child_tag = child.__class__.__name__.lower()
-                    if hasattr(child, "__slots__"):
-                        yield f"<{child_tag}>"
-                        yield from to_xml(child)
-                        yield f"</{child_tag}>"
-            yield f"</{tag}>"
-        else: # finally, yield base values as strings
-            yield f"<{tag}>{html.escape(str(value))}</{tag}>"
+                    continue
+                continue # Either skipped or emitted empty tag
+
+            elif hasattr(value, "to_xml"):      # call the custom to_xml() method for the class
+                yield value.to_xml()
+
+            elif hasattr(value, "__slots__"):   # convert children to xml recursively
+                yield f"<{tag}>"
+                yield from to_xml(value)
+                yield f"</{tag}>"
+
+            elif isinstance(value, list):       # wrap, then yield list of child nodes
+                yield f"<{tag}>"
+                for child in value:
+                    if hasattr(child, "to_xml"):
+                        yield child.to_xml()
+                    else:
+                        child_tag = child.__class__.__name__.lower()
+                        if hasattr(child, "__slots__"):
+                            yield f"<{child_tag}>"
+                            yield from to_xml(child)
+                            yield f"</{child_tag}>"
+                yield f"</{tag}>"
+            else: # finally, yield base values as strings
+                yield f"<{tag}>{html.escape(str(value))}</{tag}>"
+        except Exception as e:
+            if isinstance(e, XMLGenerationError):
+                raise e
+            raise XMLGenerationError(
+                f"Failed to generate XML for tag '{tag}' in {type(slotted_dc).__name__}. "
+                f"Value: {value!r}. Error: {e}"
+            ) from e
+
     if root_tag:
         clean_tag = root_tag.removeprefix("<").removesuffix(">")
         yield f"</{clean_tag}>"

@@ -13,7 +13,7 @@ from docx.oxml import CT_P, CT_Tbl
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
-from src.schema import SciENcvProfile, Support, PersonMonth, Identification, Name
+from src.schema import SciENcvProfile, Support, PersonMonth, Identification, Name, DocxParsingError
 from .to_xml import prettify_xml, to_xml
 
 CMD_ARGS = sys.argv
@@ -138,6 +138,7 @@ def _finalize_support(builder: dict) -> Support:
     Nested here to keep 'builder' logic self-contained.
     """
     raw_coms = builder.pop("commitment", [])
+    project_title = builder.get("projecttitle", "Unknown Project")
     try:
         final_coms = [
             PersonMonth(year=c["year"], amount=float(c["effort"]))
@@ -147,11 +148,13 @@ def _finalize_support(builder: dict) -> Support:
             commitment=final_coms,
             **builder
         )
-    except ValueError as e:
-        raise ValueError(f"Could not process support entry for the file. "
-                         f"Error: {e}"
-                         f"Data: "
-                         "".join([f"{k}: {v}" for k, v in builder.items()]))
+    except Exception as e:
+        error_msg = f"Could not process support entry for project '{project_title}'. Error: {e}"
+        if isinstance(e, ValueError):
+            # Try to give more specific info if it's a validation error
+            error_msg += f" (Check if all required fields are filled correctly)"
+        
+        raise DocxParsingError(error_msg) from e
 
 
 def _reset_builder(current_section: str) -> dict:
@@ -268,50 +271,57 @@ def parse_docx(doc_input: Union[str, Path, io.BytesIO]) -> SciENcvProfile:
     last_field_key = None
 
     # 3. PARSING LOOP
-    for block in _iter_block_items(doc):
+    for i, block in enumerate(_iter_block_items(doc)):
+        try:
+            # --- PARAGRAPH HANDLING ---
+            if isinstance(block, Paragraph):
+                text = _clean_text(block.text)
+                if not text:
+                    continue
 
-        # --- PARAGRAPH HANDLING ---
-        if isinstance(block, Paragraph):
-            text = _clean_text(block.text)
-            if not text:
-                continue
+                # A. Parse Name
+                if _parse_name(text, name_parts):
+                    continue
 
-            # A. Parse Name
-            if _parse_name(text, name_parts):
-                continue
+                # B. Section Headers
+                if FIELD_LABELS["section_header"].match(text):
+                    if builder_active:
+                        parsed_supports.append(_finalize_support(builder))
 
-            # B. Section Headers
-            if FIELD_LABELS["section_header"].match(text):
+                    header = text.upper()
+                    current_section = "PENDING" if "PENDING" in header else "IN-KIND" if "IN-KIND" in header else "ACTIVE"
+                    # Reset for new section
+                    builder = _reset_builder(current_section)
+                    builder_active = False
+                    continue
+
+                # C. New Project Detection
+                if FIELD_LABELS["project_title"].search(text):
+                    if builder_active:
+                        parsed_supports.append(_finalize_support(builder))
+
+                    # Start new project
+                    builder = _reset_builder(current_section)
+                    builder_active = True
+                    last_field_key = None  # Reset context for new project
+
+                if not builder_active: continue
+
+                # D. Field Extraction
+                # Delegates complex regex logic to helper
+                last_field_key = _process_paragraph(text, builder, last_field_key)
+
+            # --- TABLE HANDLING ---
+            elif isinstance(block, Table):
                 if builder_active:
-                    parsed_supports.append(_finalize_support(builder))
-
-                header = text.upper()
-                current_section = "PENDING" if "PENDING" in header else "IN-KIND" if "IN-KIND" in header else "ACTIVE"
-                # Reset for new section
-                builder = _reset_builder(current_section)
-                builder_active = False
-                continue
-
-            # C. New Project Detection
-            if FIELD_LABELS["project_title"].search(text):
-                if builder_active:
-                    parsed_supports.append(_finalize_support(builder))
-
-                # Start new project
-                builder = _reset_builder(current_section)
-                builder_active = True
-                last_field_key = None  # Reset context for new project
-
-            if not builder_active: continue
-
-            # D. Field Extraction
-            # Delegates complex regex logic to helper
-            last_field_key = _process_paragraph(text, builder, last_field_key)
-
-        # --- TABLE HANDLING ---
-        elif isinstance(block, Table):
-            if builder_active:
-                _process_table(block, builder)
+                    _process_table(block, builder)
+        except Exception as e:
+            if isinstance(e, DocxParsingError):
+                raise e
+            block_text = block.text[:50] + "..." if hasattr(block, "text") and len(block.text) > 50 else getattr(block, "text", "Table/Other")
+            raise DocxParsingError(
+                f"Error at document item #{i} ('{block_text}'): {e}"
+            ) from e
 
     # 4. FINAL FLUSH
     if builder_active:

@@ -17,6 +17,21 @@ class SkipEmptyMixin:
     pass
 
 
+class WordParserError(Exception):
+    """Base exception for WordParser."""
+    pass
+
+
+class XMLGenerationError(WordParserError):
+    """Raised when XML generation fails."""
+    pass
+
+
+class DocxParsingError(WordParserError):
+    """Raised when DOCX parsing fails."""
+    pass
+
+
 @dataclass(slots=True)
 class Name(SkipEmptyMixin):
     """

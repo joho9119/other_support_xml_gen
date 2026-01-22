@@ -17,7 +17,7 @@ from src.schema import SciENcvProfile, Support, PersonMonth, Identification, Nam
 from .to_xml import prettify_xml, to_xml
 
 CMD_ARGS = sys.argv
-AMOUNT_EXTRACTOR = re.compile(r"\$?([\d,]+)")
+AMOUNT_EXTRACTOR = re.compile(r"\$?([\d,]+(?:\.\d+)?)")
 DATE_EXTRACTOR = re.compile(
     r"(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})\s*[-–]\s*(\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}/\d{2,4})"
 )

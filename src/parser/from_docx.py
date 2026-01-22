@@ -77,7 +77,8 @@ def _parse_date_str(date_str: str) -> str:
             dt = datetime.strptime(date_str, fmt)
             if "d" not in fmt: return dt.strftime("%Y-%m-01")
             return dt.strftime("%Y-%m-%d")
-        except ValueError: continue
+        except ValueError:
+            continue
     return ""
 
 
@@ -137,14 +138,20 @@ def _finalize_support(builder: dict) -> Support:
     Nested here to keep 'builder' logic self-contained.
     """
     raw_coms = builder.pop("commitment", [])
-    final_coms = [
-        PersonMonth(year=c["year"], amount=float(c["effort"]))
-        for c in raw_coms
-    ]
-    return Support(
-        commitment=final_coms,
-        **builder
-    )
+    try:
+        final_coms = [
+            PersonMonth(year=c["year"], amount=float(c["effort"]))
+            for c in raw_coms
+        ]
+        return Support(
+            commitment=final_coms,
+            **builder
+        )
+    except ValueError as e:
+        raise ValueError(f"Could not process support entry for the file. "
+                         f"Error: {e}"
+                         f"Data: "
+                         "".join([f"{k}: {v}" for k, v in builder.items()]))
 
 
 def _reset_builder(current_section: str) -> dict:

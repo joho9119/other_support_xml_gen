@@ -325,7 +325,12 @@ def parse_docx(doc_input: Union[str, Path, io.BytesIO]) -> SciENcvProfile:
 
     # 4. FINAL FLUSH
     if builder_active:
-        parsed_supports.append(_finalize_support(builder))
+        try:
+            parsed_supports.append(_finalize_support(builder))
+        except Exception as e:
+            if isinstance(e, DocxParsingError):
+                raise e
+            raise DocxParsingError(f"Error finalizing last support entry: {e}") from e
 
     return SciENcvProfile(
         identification=Identification(name=Name(**name_parts)),

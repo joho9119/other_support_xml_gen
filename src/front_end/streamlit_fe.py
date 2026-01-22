@@ -67,13 +67,16 @@ def main():
                     st.session_state["last_uploaded_id"] = current_file_id
                     st.success(f"Processed: {record['filename']}")
 
-                except WordParserError as e:
-                    st.error(f"⚠️ {e}")
-                    with st.expander("Technical details"):
-                        st.exception(e)
                 except Exception as e:
-                    st.error(f"An unexpected error occurred: {e}")
-                    st.exception(e)
+                    # User-friendly error message
+                    if isinstance(e, WordParserError):
+                        st.error(f"⚠️ {e}")
+                    else:
+                        st.error(f"⚠️ An unexpected error occurred: {e}")
+                    
+                    # Hidden technical details
+                    with st.expander("Technical details (for support)"):
+                        st.exception(e)
 
         st.divider()
 

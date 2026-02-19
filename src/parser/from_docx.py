@@ -46,9 +46,9 @@ TRANSLATION_TABLE = str.maketrans({
         '\u201d': '"',  # Right smart quote
     })
 CM_TRANS_TBL = str.maketrans({
-    "cm": None,
-    "calendar": None,
-    "effort": None,
+    "cm": "",
+    "calendar": "",
+    "effort": "",
 })
 
 DEFAULT_SUPPORT_TEMPLATE = {

@@ -228,6 +228,11 @@ def _process_paragraph(text: str, builder: dict, last_field_key: Optional[str]) 
 
     return current_key
 
+CM_TRANS_TBL = str.maketrans({
+    "cm": None,
+    "calendar": None,
+    "effort": None,
+})
 
 def _process_table(table: Table, builder: dict):
     """Extracts Year/Effort rows from a table and appends to builder."""
@@ -243,7 +248,7 @@ def _process_table(table: Table, builder: dict):
         if len(cells) >= 2:
             year_match = YEAR_EXTRACTOR.search(cells[0])
             year = year_match.group(1) if year_match else ""
-            effort = cells[1].lower().replace("calendar", "").strip()
+            effort = cells[1].lower().translate(CM_TRANS_TBL).strip()
             if year and effort:
                 rows.append({"year": year, "effort": effort})
     if rows:

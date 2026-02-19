@@ -45,7 +45,7 @@ TRANSLATION_TABLE = str.maketrans({
         '\u201c': '"',  # Left smart quote
         '\u201d': '"',  # Right smart quote
     })
-EFFORT_STR_TO_REMOVE = ["cm", "effort", "calendar"]
+EFFORT_STR_TO_REMOVE = ["cm", "effort", "months", "calendar", "cal", "calen", "dist"]
 
 DEFAULT_SUPPORT_TEMPLATE = {
     "projecttitle": "",

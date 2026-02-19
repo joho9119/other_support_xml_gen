@@ -245,7 +245,7 @@ def _process_table(table: Table, builder: dict):
             year = year_match.group(1) if year_match else ""
             effort = cells[1].lower()
             for s in EFFORT_STR_TO_REMOVE:
-                effort = s.replace(effort, s)
+                effort = effort.replace(s, "")
             effort = effort.strip()
             if year and effort:
                 rows.append({"year": year, "effort": effort})

@@ -51,7 +51,6 @@ CM_TRANS_TBL = str.maketrans({
     "effort": None,
 })
 
-
 DEFAULT_SUPPORT_TEMPLATE = {
     "projecttitle": "",
     "awardnumber": "",

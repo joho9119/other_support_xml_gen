@@ -45,11 +45,7 @@ TRANSLATION_TABLE = str.maketrans({
         '\u201c': '"',  # Left smart quote
         '\u201d': '"',  # Right smart quote
     })
-CM_TRANS_TBL = str.maketrans({
-    "cm": "",
-    "calendar": "",
-    "effort": "",
-})
+EFFORT_STR_TO_REMOVE = ["cm", "effort", "calendar"]
 
 DEFAULT_SUPPORT_TEMPLATE = {
     "projecttitle": "",
@@ -247,7 +243,10 @@ def _process_table(table: Table, builder: dict):
         if len(cells) >= 2:
             year_match = YEAR_EXTRACTOR.search(cells[0])
             year = year_match.group(1) if year_match else ""
-            effort = cells[1].lower().translate(CM_TRANS_TBL).strip()
+            effort = cells[1].lower()
+            for s in EFFORT_STR_TO_REMOVE:
+                effort = s.replace(effort, s)
+            effort = effort.strip()
             if year and effort:
                 rows.append({"year": year, "effort": effort})
     if rows:

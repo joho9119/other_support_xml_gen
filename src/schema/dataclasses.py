@@ -140,6 +140,7 @@ class Support(RenderEmptyMixin):
     
     def _clean_amount(self):
         raw_amt = str(self.awardamount) if self.awardamount is not None else ""
+        raw_amt = raw_amt.strip().split(" ")[0]
         clean_amt = re.sub(r"\D", "", raw_amt)  # Remove non-digits
         self.awardamount = clean_amt[:13]
 

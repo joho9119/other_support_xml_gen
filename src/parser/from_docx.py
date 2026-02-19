@@ -45,6 +45,12 @@ TRANSLATION_TABLE = str.maketrans({
         '\u201c': '"',  # Left smart quote
         '\u201d': '"',  # Right smart quote
     })
+CM_TRANS_TBL = str.maketrans({
+    "cm": None,
+    "calendar": None,
+    "effort": None,
+})
+
 
 DEFAULT_SUPPORT_TEMPLATE = {
     "projecttitle": "",
@@ -227,12 +233,6 @@ def _process_paragraph(text: str, builder: dict, last_field_key: Optional[str]) 
         _update_field(builder, current_key, val, append=False)
 
     return current_key
-
-CM_TRANS_TBL = str.maketrans({
-    "cm": None,
-    "calendar": None,
-    "effort": None,
-})
 
 def _process_table(table: Table, builder: dict):
     """Extracts Year/Effort rows from a table and appends to builder."""
